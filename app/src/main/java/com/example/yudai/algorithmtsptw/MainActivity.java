@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
         //**
         mLocates.add(new Locate("The Shells Resort ", "10.243979, 103.948455", 540,990,180));
         mLocates.add(new Locate("Vinpearl Safari Phú Quốc 1", "10.337086, 103.891322 ", 540,990,180));
-        mLocates.add(new Locate("Di tích Nhà tù Phú Quốc 2", "10.043501, 104.018480  ",480,690,90));
+        mLocates.add(new Locate("Di tích Nhà tù Phú Quốc 2", "10.043501, 104.018480  ",480,990,90));
         mLocates.add(new Locate("Chợ đêm Phú Quốc 3", "10.218282, 103.960214  ",990,1440,180));
         mLocates.add(new Locate("Làng chài Hàm Ninh 4", "10.179362, 104.049026  ",240,1320,120));
 
