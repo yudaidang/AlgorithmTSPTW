@@ -6,7 +6,6 @@ import com.example.yudai.algorithmtsptw.Locate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class DynamicProgrammingTSPTW {
     private final int N;
@@ -27,39 +26,55 @@ public class DynamicProgrammingTSPTW {
         this.mLocates = mLocates;
         int state = 1 << START_NODE;
         Integer[][] prev = new Integer[N][1 << N];
-        tsp(0, state,  prev, 540);
+        tsp(0, state, prev, 540);
     }
 
-    private int tsp(int i, int state, Integer[][] prev, int mStartTime, Integer[][] memo){
-        if(state == FINISHED_STATE){
-            return travelTime[i][START_NODE];
-        }
-    }
-
-    private boolean TEST1 (int mStartTime, int i, int j, Integer[][] memo, int state){
-        if(memo[i][state] > mLocates.get(j).getmClose() - mLocates.get(j).getmStay()){
+    private boolean TEST1(int mStartTime, int i, int j) {
+        if (mStartTime + mLocates.get(i).getmStay() > mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
             return false;
         }
         return true;
     }
 
-    private boolean TEST2 (int state, int j){
-        if((state & (1 << j)) == 0){
-            if(state != (state & mBefore.get(j)) && mBefore.get(j) != (state & mBefore.get(j))){
+    private boolean TEST2(int state, int j) {
+        if ((state & (1 << j)) == 0) {
+            if (state != (state & mBefore.get(j)) && mBefore.get(j) != (state & mBefore.get(j))) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean TEST3(int mStartTimei, int state){
-        if(mStartTimei <= (state & mBefore.get(j)) && mBefore.get(j) != (state & mBefore.get(j)))
+    //mStartTimei thoi gian bat dau phuc vu tai i
+    private boolean TEST3(int mStartTimei, int state, int i, int j) {
+        if (mStartTimei <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+            for (int index = 0; index < N; index++) {
+                if ((state & (1 << index)) != 0) continue;
+                if (mStartTimei + travelTime[i][j] <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
     }
 
-    private int tsp(int i, int state,  Integer[][] prev, int mStartTime) {
+    private boolean DOMINANCETEST(int mStartTimei, int state, int i, int j) {
+        if (mStartTimei <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+            for (int index = 0; index < N; index++) {
+                if ((state & (1 << index)) != 0) continue;
+                if (mStartTimei + travelTime[i][j] <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private int tsp(int i, int state, Integer[][] prev, int mStartTSV) {
         if (state == FINISHED_STATE) {
-            Log.d("CONTINUEFINISH222", " STARTNODE: "+ i + " " + mTest + " STATE " +  (mStartTime + mLocates.get(i).getmStay() + travelTime[i][START_NODE]));
-            mTest.delete(mTest.length() -3, mTest.length());
+            Log.d("CONTINUEFINISH222", " STARTNODE: " + i + " " + mTest + " STATE " + (mStartTSV + mLocates.get(i).getmStay() + travelTime[i][START_NODE]));
             return travelTime[i][START_NODE];
 
         }
@@ -67,20 +82,16 @@ public class DynamicProgrammingTSPTW {
         int minTravelTime = Integer.MAX_VALUE;
         int index = -1;
         for (int next = 0; next < N; next++) {
+
             if ((state & (1 << next)) != 0) continue;
-
             int nextState = state | (1 << next);
-            int mStartTimeNext = mStartTime + travelTime[i][next];
-            int newTravelTime;
-            if (mStartTimeNext < mLocates.get(next).getmOpen() || (mStartTimeNext + mLocates.get(next).getmStay()) > mLocates.get(next).getmClose() ) {
+            if (!TEST1(mStartTSV, i, next) || !TEST2(nextState, next) || !TEST3(mStartTSV, nextState, i, next))
                 continue;
-            } else {
-                mTest.append(" " + i);
-                Log.d("CONTINUE", " STARTNODE: " + i + " STATE: " + state + " NEXT: " + next + " " + minTravelTime);
 
+            int mStartTSVNext = mStartTSV + mLocates.get(i).getmStay() + travelTime[i][next];
+            int newTravelTime;
 
-                newTravelTime = mStartTimeNext + tsp(next, nextState,  prev, (mStartTimeNext + mLocates.get(next).getmStay()));
-            }
+            newTravelTime = mStartTSVNext + tsp(next, nextState, prev, mStartTSVNext);
 
             if (newTravelTime < minTravelTime) {
 
