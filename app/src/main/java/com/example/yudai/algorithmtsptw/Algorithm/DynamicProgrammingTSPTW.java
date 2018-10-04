@@ -2,8 +2,6 @@ package com.example.yudai.algorithmtsptw.Algorithm;
 
 import android.util.Log;
 
-import com.example.yudai.algorithmtsptw.Locate;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,33 +11,27 @@ public class DynamicProgrammingTSPTW {
     private final int FINISHED_STATE;
     private final int START_NODE;
     private Integer[][] travelTime;
-    private Integer[][] distance;
     private ArrayList<Locate> mLocates;
-    private StringBuilder mTest = new StringBuilder();
     private boolean ranSolver = false;
     private int minTravelTime = Integer.MAX_VALUE;
     private HashMap<Integer, Integer> mBefore = new HashMap<>();
     private List<Integer> tour = new ArrayList<>();
-    private StringBuilder str = new StringBuilder();
 
-    public DynamicProgrammingTSPTW(Integer[][] travelTime, int startNode, ArrayList mLocates, Integer[][] distance) {
-        this.distance = distance;
+    public DynamicProgrammingTSPTW(Integer[][] travelTime, int startNode, ArrayList mLocates) {
         N = travelTime.length;
         FINISHED_STATE = (1 << N) - 1;
         this.travelTime = travelTime;
         START_NODE = startNode;
         this.mLocates = mLocates;
-/*        int state = 1 << START_NODE;
-        Integer[][] prev = new Integer[N][1 << N];
-        tsp(0, state, prev, 540, 0);*/
     }
 
-    public StringBuilder getTour() {
+    public List<Integer> getTour() {
         if (!ranSolver) solve();
-        return str;
+        return tour;
     }
 
-    public double getTravelTime() {
+    // Returns the minimal tour cost.
+    public double getTourTravelTime() {
         if (!ranSolver) solve();
         return minTravelTime;
     }
@@ -48,17 +40,17 @@ public class DynamicProgrammingTSPTW {
 
         // Run the solver
         int state = 1 << START_NODE;
-        Double[][] memo = new Double[N][1 << N];
+        Integer[][] memo = new Integer[N][1 << N];
         Integer[][] prev = new Integer[N][1 << N];
-        minTravelTime = tsp(0, state, prev, 540, 0);
-
+        Log.d("YUALGORITHM", "START - NODE: " + START_NODE);
+        minTravelTime = tsp(START_NODE, state, prev, memo, 540);
 
         // Regenerate path
         int index = START_NODE;
         while (true) {
             tour.add(index);
             Integer nextIndex = prev[index][state];
-            if (nextIndex == null || nextIndex == -1) break;
+            if (nextIndex == null) break;
             int nextState = state | (1 << nextIndex);
             state = nextState;
             index = nextIndex;
@@ -67,8 +59,53 @@ public class DynamicProgrammingTSPTW {
         ranSolver = true;
     }
 
+    private int tsp(int i, int state, Integer[][] prev, Integer[][] memo, int mStartTSV) {
+        if (state == FINISHED_STATE) {
+            Log.d("YUALGORITHM", "FINISH: " + i + " ");
+
+            return travelTime[i][START_NODE];
+        }
+        int minTravelTime = Integer.MAX_VALUE;
+        int index = -1;
+        for (int next = 0; next < N; next++) {
+            if ((state & (1 << next)) != 0) continue;
+            Log.d("YUALGORITHM", "NODE: " + next);
+            int nextState = state | (1 << next);
+            //TEST
+            if (!TEST1(mStartTSV, i, next) || !TEST2(nextState, next) || !TEST3(mStartTSV, nextState, i, next)) {
+                continue;
+            }
+            int mStartTSVNext = mStartTSV + mLocates.get(i).getmStay() + travelTime[i][next];
+            int newTravelTime;
+
+            newTravelTime = travelTime[i][next] + tsp(next, nextState, prev, memo, mStartTSVNext);
+
+            if (newTravelTime < minTravelTime && newTravelTime >= 0) {
+                Log.d("YUALGORITHM", "NODE: " + i + " " + next + " DUYET ");
+                minTravelTime = newTravelTime;
+                index = next;
+            }
+        }
+
+        if (((memo[i][state] != null && memo[i][state] > minTravelTime) || memo[i][state] == null) && index != -1) {
+            memo[i][state] = minTravelTime;
+            prev[i][state] = index;
+            Log.d("YUALGORITHM", "NODE: " + i + " memo " + state);
+
+        }
+        if (index != -1) {
+
+            return memo[i][state];
+        } else {
+            Log.d("YUALGORITHM", "NODE: " + i + " NOT FOR");
+            return Integer.MAX_VALUE;
+        }
+    }
+
     private boolean TEST1(int mStartTime, int i, int j) {
         if (mStartTime + mLocates.get(i).getmStay() > mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+            Log.d("YUALGORITHM", "NODE: " + j + " REMOVE 1");
+
             return false;
         }
         return true;
@@ -77,6 +114,7 @@ public class DynamicProgrammingTSPTW {
     private boolean TEST2(int state, int j) {
         if ((state & (1 << j)) == 0) {
             if (state != (state & mBefore.get(j)) && mBefore.get(j) != (state & mBefore.get(j))) {
+                Log.d("YUALGORITHM", "NODE: " + j + " REMOVE 2");
                 return false;
             }
         }
@@ -84,63 +122,21 @@ public class DynamicProgrammingTSPTW {
     }
 
     //mStartTimei thoi gian bat dau phuc vu tai i
-    private boolean TEST3(int mStartTimeI, int state, int i, int j, int mCheck) {
-        if (mStartTimeI <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+    private boolean TEST3(int mStartTimei, int state, int i, int j) {
+        if (state == FINISHED_STATE) {
+            return true;
+        }
+        if (mStartTimei <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
             for (int index = 0; index < N; index++) {
-                if ((state & (1 << index)) != 0 && state != 31) continue;
-                if (mStartTimeI + travelTime[i][j] <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
+                if ((state & (1 << index)) != 0) continue;
+                if (mStartTimei + travelTime[i][j] <= mLocates.get(j).getmClose() - mLocates.get(j).getmStay() - travelTime[i][j]) {
                     return true;
                 }
             }
+            Log.d("YUALGORITHM", "NODE: " + j + " REMOVE 3");
+
             return false;
         }
         return true;
-    }
-
-    private boolean DOMINANCETEST(int mStartTimeI, int mCost, int i, int j) {
-        if (mCost <= (mCost + distance[i][j]) && mStartTimeI <= mStartTimeI + travelTime[i][j] + mLocates.get(i).getmStay()) {
-            return false;
-        }
-        return true;
-    }
-
-    //mStartTSV" Start time service time
-    private int tsp(int i, int state, Integer[][] prev, int mStartTSV, int mCost) {
-        if (state == FINISHED_STATE) {
-            return travelTime[i][START_NODE];
-        }
-        int minTravelTime = Integer.MAX_VALUE;
-        int index = -1;
-        int mCheck = 1 << START_NODE;
-
-        for (int next = 0; next < N; next++) {
-            if ((state & (1 << next)) != 0) continue;
-            if (!TEST1(mStartTSV, i, next) || !TEST2(state | (1 << next), next) || !TEST3(mStartTSV, state | (1 << next), i, next, mCheck)
-                /*|| DOMINANCETEST(mStartTSV, mCost, i, next)*/)
-                continue;
-            mCheck = mCheck | (1 << next);
-            int nextState = state | (1 << next);
-
-            int mStartTSVNext = mStartTSV + mLocates.get(i).getmStay() + travelTime[i][next];
-            int temp = tsp(next, nextState, prev, mStartTSVNext, mCost + distance[i][next]);
-            int newTravelTime = temp;
-            if (temp != Integer.MAX_VALUE) {
-                newTravelTime = mStartTSVNext + temp;
-            }
-            if (newTravelTime < minTravelTime) {
-
-                minTravelTime = newTravelTime;
-                index = next;
-            }
-        }
-        if (mCheck == ((1 << N) - 1)) {
-            prev[i][state] = index;
-        }
-
-        if (index == -1) {
-            return Integer.MAX_VALUE;
-        }
-
-        return minTravelTime;
     }
 }

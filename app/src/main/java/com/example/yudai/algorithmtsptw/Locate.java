@@ -6,13 +6,23 @@ public class Locate {
     private int mStay;
     private int mOpen;
     private int mClose;
+    private int mId;
 
-    public Locate(String mName, String mCoordinate, int mOpen, int mClose, int mStay) {
+    public Locate(String mName, String mCoordinate, int mStay, int mClose, int mOpen, int mId) {
         this.mName = mName;
         this.mCoordinate = mCoordinate;
         this.mStay = mStay;
-        this.mClose = mClose;
         this.mOpen = mOpen;
+        this.mClose = mClose;
+        this.mId = mId;
+    }
+
+    public int getmId() {
+        return mId;
+    }
+
+    public void setmId(int mId) {
+        this.mId = mId;
     }
 
     public String getmName() {
