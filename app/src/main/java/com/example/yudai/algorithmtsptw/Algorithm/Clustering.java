@@ -1,11 +1,14 @@
 package com.example.yudai.algorithmtsptw.Algorithm;
 
+import android.util.Log;
+
 import com.example.yudai.algorithmtsptw.Locate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 
 public class Clustering {
     ArrayList<TimeWindow> listGroup = new ArrayList<>();
@@ -13,8 +16,7 @@ public class Clustering {
 
     private ArrayList<Locate> mLocates;
     private DateTravel mNumberDateTravel;
-    private HashMap<TimeWindow, HashSet<Locate>> listTimeGroup = new HashMap<>();
-
+    private LinkedHashMap<TimeWindow, HashSet<Locate>> listTimeGroupClone = new LinkedHashMap<>();
     private HashMap<Integer, HashSet<Locate>> listDate = new HashMap<>();
 
     public Clustering(Integer[][] travelTime, ArrayList<Locate> mLocates, DateTravel mNumberDateTravel) {
@@ -30,27 +32,27 @@ public class Clustering {
         int mStartTemp = 540;
         while (mStartTemp < 1440) {
             int temp = mStartTemp + 120;
-            listGroup.add(new TimeWindow(mStartTemp, temp> 1440 ? 1440 : temp));
+            listTimeGroupClone.put(new TimeWindow(mStartTemp, temp > 1440 ? 1440 : temp), new HashSet<Locate>());
             mStartTemp += 120;
         }
-
         for (int i = 0; i < mLocates.size(); i++) {
-            for (int j = 0; j < listGroup.size(); j++) {
-                if (mLocates.get(i).getmOpen() < listGroup.get(j).getmOpen() && mLocates.get(i).getmClose() > listGroup.get(j).getmClose()) {
+            for (TimeWindow time : listTimeGroupClone.keySet()) {
+                if (mLocates.get(i).getmOpen() < time.getmOpen() && mLocates.get(i).getmClose() > time.getmClose()) {
                     HashSet<Locate> list;
-                    if (listTimeGroup.containsKey(listGroup.get(j))) {
-                        list = listTimeGroup.get(listGroup.get(j));
+                    if (listTimeGroupClone.get(time) != null) {
+                        list = listTimeGroupClone.get(time);
                     } else {
                         list = new HashSet<>();
                     }
                     list.add(mLocates.get(i));
-                    listTimeGroup.put(listGroup.get(j), list);
+                    listTimeGroupClone.put(time, list);
                 }
-                if (mLocates.get(i).getmClose() < listGroup.get(j).getmClose()) {
+                if (mLocates.get(i).getmClose() < time.getmClose()) {
                     break;
                 }
-            }
+           }
         }
+        Log.d("YUDAIDAG", "");
     }
 
     public void ImplementClustering() {
@@ -64,9 +66,9 @@ public class Clustering {
 
             int mTotalTravelTimeDate = 0;
 
-            for (TimeWindow timeWindow : listTimeGroup.keySet()) {
+            for (TimeWindow timeWindow : listTimeGroupClone.keySet()) {
                 int preTravel = Integer.MAX_VALUE;
-                Iterator<Locate> iterator = listTimeGroup.get(timeWindow).iterator();
+                Iterator<Locate> iterator = listTimeGroupClone.get(timeWindow).iterator();
                 while (iterator.hasNext()) {
                     if ((state & (1 << iterator.next().getmId())) != 0) {
                         iterator.remove();
@@ -80,7 +82,8 @@ public class Clustering {
                         preTravel = travelTime[preLocate.getmId()][iterator.next().getmId()];
                         break;
                     } else {
-                        if (travelTime[preLocate.getmId()][iterator.next().getmId()] < preTravel) {
+                        int k = iterator.next().getmId();
+                        if (travelTime[preLocate.getmId()][k] < preTravel) {
                             preLocate = iterator.next();
                             preTravel = travelTime[preLocate.getmId()][iterator.next().getmId()];
                             state = state | (1 << iterator.next().getmId());
@@ -94,6 +97,7 @@ public class Clustering {
                     break;
                 }
             }
+            listDate.put(i, list);
 
         }
     }
