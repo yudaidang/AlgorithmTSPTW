@@ -15,6 +15,7 @@ public class Clustering {
     private DateTravel mNumberDateTravel;
     private HashMap<TimeWindow, HashSet<Locate>> listTimeGroup = new HashMap<>();
 
+    private HashMap<Integer, HashSet<Locate>> listDate = new HashMap<>();
 
     public Clustering(Integer[][] travelTime, ArrayList<Locate> mLocates, DateTravel mNumberDateTravel) {
         this.travelTime = travelTime;
@@ -57,12 +58,15 @@ public class Clustering {
 
         for (int i = 0; i < mNumberDateTravel.getList().size(); i++) {
             int j = 0;
+            HashSet<Locate> list = new HashSet<>();
             Locate preLocate = new Locate("The Shells Resort ", "10.243979, 103.948455", 540, 1440, 0, 0);
             int mLimitTimeTravel = mNumberDateTravel.getList().get(i).getmClose() - mNumberDateTravel.getList().get(i).getmOpen();
+
+            int mTotalTravelTimeDate = 0;
+
             for (TimeWindow timeWindow : listTimeGroup.keySet()) {
                 int preTravel = Integer.MAX_VALUE;
                 Iterator<Locate> iterator = listTimeGroup.get(timeWindow).iterator();
-                int mTotalTravelTimeDate = 0;
                 while (iterator.hasNext()) {
                     if ((state & (1 << iterator.next().getmId())) != 0) {
                         iterator.remove();
@@ -70,10 +74,10 @@ public class Clustering {
                     }
 
                     if (j == 0) {
-                        mTotalTravelTimeDate += travelTime[preLocate.getmId()][iterator.next().getmId()];
                         preLocate = iterator.next();
                         iterator.remove();
                         state = state | (1 << iterator.next().getmId());
+                        preTravel = travelTime[preLocate.getmId()][iterator.next().getmId()];
                         break;
                     } else {
                         if (travelTime[preLocate.getmId()][iterator.next().getmId()] < preTravel) {
@@ -83,7 +87,7 @@ public class Clustering {
                         }
                     }
                 }
-                listTimeGroup.get(timeWindow).remove(preLocate);
+                list.add(preLocate);
                 mTotalTravelTimeDate += preTravel;
                 j++;
                 if (mTotalTravelTimeDate > 0.8 * mLimitTimeTravel) {
